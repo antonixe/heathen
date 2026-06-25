@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>YouTube Live View Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Rubik:opsz,wght@9..144,400&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#0d0f12;
+      --panel:#0b0c0e;
+      --muted:#9aa3a8;
+      --accent:#00f5d4; /* electric teal */
+      --danger:#ff6b6b;
+      --mono:'JetBrains Mono', monospace;
+      --gap:16px;
+      --max-w:640px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; background:var(--bg); color:#c9d1d9; font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; display:flex; align-items:center; justify-content:center; padding:24px;
+    }
+    .wrap{width:100%;max-width:var(--max-w);margin:0 auto}
+    header.top{display:flex;gap:8px;align-items:center}
+    .url-form{display:flex;gap:8px;flex:1}
+    input[type="url"]{flex:1;padding:10px 12px;background:#0b0c0e;border:1px solid #111;color:#ddd;outline:none}
+    button{background:transparent;border:1px solid #222;color:#ddd;padding:8px 12px;cursor:pointer}
+    button.primary{background:linear-gradient(transparent,transparent);border-color:var(--accent);color:var(--accent);font-weight:700}
+    .icon-btn{width:40px;height:40px;display:inline-grid;place-items:center;border-radius:6px}
+    .title{margin-top:20px;color:var(--muted);font-variant:small-caps;letter-spacing:0.06em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .hero{font-family:var(--mono);font-size:64px;line-height:1;color:var(--accent);margin:18px 0;display:block}
+    @media(max-width:420px){.hero{font-size:44px}}
+    .stats{display:flex;gap:12px;font-family:var(--mono);color:#bfc9cc}
+    .spark{height:120px;width:100%;display:block;margin-top:12px}
+    .meta{display:flex;justify-content:space-between;color:var(--muted);font-size:13px;margin-top:8px}
+    .log{margin-top:12px;background:transparent;border:1px solid #111;padding:8px;height:160px;overflow:auto;font-family:var(--mono);font-size:13px}
+    .error{color:var(--danger);font-size:13px;margin-top:6px}
+
+    /* settings panel */
+    .settings-panel{position:fixed;right:-420px;top:0;height:100%;width:380px;background:var(--panel);box-shadow:-24px 0 40px rgba(0,0,0,.6);transition:right .32s cubic-bezier(.2,.9,.3,1);padding:20px}
+    .settings-panel.open{right:0}
+    .settings-panel h3{margin-top:0;color:var(--muted)}
+    .field{margin-bottom:12px}
+    .segmented{display:inline-flex;border-radius:6px;overflow:hidden;border:1px solid #222}
+    .segmented button{padding:8px 12px;background:transparent;border:0;color:#bfc9cc}
+    .segmented button.active{background:#071617;color:var(--accent);font-weight:700}
+    .small{font-size:13px;color:var(--muted)}
+
+    /* subtle focus */
+    input:focus,button:focus{outline:2px solid rgba(0,245,212,0.08)}
+
+    /* topbar layout */
+    .top-row{display:flex;gap:12px;align-items:center}
+    .left{flex:1}
+    .count-wrap{text-align:center}
+    .count-change{color:#9fd4c9;font-family:var(--mono)}
+
+    /* session log items */
+    .log-item{display:flex;justify-content:space-between;padding:6px;border-bottom:1px dashed rgba(255,255,255,0.02)}
+    .muted{color:var(--muted)}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top-row">
+      <div class="left">
+        <div class="url-form">
+          <input id="urlInput" type="url" placeholder="Paste YouTube URL or ID" aria-label="YouTube URL" />
+          <button id="trackBtn" class="primary">Track</button>
+        </div>
+        <div id="inputError" class="error" style="display:none"></div>
+      </div>
+      <button id="settingsBtn" class="icon-btn" title="Settings">⚙️</button>
+    </div>
+
+    <div id="title" class="title"></div>
+    <div class="count-wrap">
+      <div id="count" class="hero">—</div>
+      <div class="stats" style="justify-content:center;margin-top:6px;">
+        <div class="small"><span id="gained">+0</span><div class="muted">this session</div></div>
+        <div class="small"><span id="liveVel">0</span><div class="muted">v/min live</div></div>
+        <div class="small"><span id="avgVel">0</span><div class="muted">v/min avg</div></div>
+      </div>
+    </div>
+
+    <svg id="spark" class="spark" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
+
+    <div class="meta"><div id="updated" class="small">Not tracking</div><div id="countdown" class="small"></div></div>
+
+    <div id="log" class="log" aria-live="polite"></div>
+  </div>
+
+  <aside id="settings" class="settings-panel" aria-hidden="true">
+    <h3>Settings</h3>
+    <div class="field">
+      <label class="small">YouTube API Key</label>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:6px;">
+        <input id="apiKey" type="password" style="flex:1;padding:8px;background:#081010;border:1px solid #111;color:#ddd" placeholder="Enter API key" />
+        <button id="showKey" class="icon-btn">👁️</button>
+      </div>
+    </div>
+    <div class="field">
+      <div class="small">Poll interval</div>
+      <div style="margin-top:8px" class="segmented">
+        <button data-interval="30">30s</button>
+        <button data-interval="60" class="active">60s</button>
+        <button data-interval="120">120s</button>
+      </div>
+    </div>
+    <div class="field"><button id="clearSession">Clear session</button></div>
+    <div class="field"><button id="copyLog">Copy session log</button></div>
+  </aside>
+
+  <script>
+  (function(){
+    // util
+    const el = id=>document.getElementById(id);
+    const fmt = n=>n.toLocaleString();
+    const sleep = ms=>new Promise(r=>setTimeout(r,ms));
+
+    // state
+    let apiKey = localStorage.getItem('yt_api_key') || '';
+    const apiKeyInput = el('apiKey'); apiKeyInput.value = apiKey;
+    let pollInterval = Number(localStorage.getItem('yt_poll') || 60);
+    let pollTimer = null; // id for setTimeout next poll
+    let countdownTimer = null;
+
+    let tracking = {videoId:null,title:'',startTime:null,startCount:0,lastCount:0,data:[],velocities:[],peakVel:0};
+    let nextUpdateAt = 0;
+    let backoff = {attempts:0,delay:1000};
+
+    const urlInput = el('urlInput');
+    const trackBtn = el('trackBtn');
+    const inputError = el('inputError');
+    const titleEl = el('title');
+    const countEl = el('count');
+    const gainedEl = el('gained');
+    const liveVelEl = el('liveVel');
+    const avgVelEl = el('avgVel');
+    const spark = el('spark');
+    const logEl = el('log');
+    const updatedEl = el('updated');
+    const countdownEl = el('countdown');
+    const settingsBtn = el('settingsBtn');
+    const settingsPanel = el('settings');
+    const showKeyBtn = el('showKey');
+    const clearSessionBtn = el('clearSession');
+    const copyLogBtn = el('copyLog');
+    const segButtons = Array.from(document.querySelectorAll('.segmented button'));
+
+    // init UI
+    function setPollUI(){
+      segButtons.forEach(b=>b.classList.toggle('active', Number(b.dataset.interval)===pollInterval));
+      localStorage.setItem('yt_poll', String(pollInterval));
+    }
+    setPollUI();
+
+    // show/hide settings
+    settingsBtn.addEventListener('click',()=>{settingsPanel.classList.toggle('open');settingsPanel.setAttribute('aria-hidden', String(!settingsPanel.classList.contains('open')))});
+    showKeyBtn.addEventListener('click',()=>{ if(apiKeyInput.type==='password') apiKeyInput.type='text'; else apiKeyInput.type='password';});
+
+    // segment control
+    segButtons.forEach(b=>b.addEventListener('click',()=>{pollInterval=Number(b.dataset.interval); setPollUI(); if(tracking.videoId) scheduleNextPoll(0); }));
+
+    // settings actions
+    apiKeyInput.addEventListener('change',()=>{apiKey = apiKeyInput.value.trim(); localStorage.setItem('yt_api_key', apiKey);} );
+    clearSessionBtn.addEventListener('click',()=>{ clearSession(); });
+    copyLogBtn.addEventListener('click',copyLog);
+
+    // URL parsing
+    function extractVideoId(input){
+      if(!input) return null;
+      input = input.trim();
+      // If pure ID
+      if(/^[a-zA-Z0-9_-]{11}$/.test(input)) return input;
+      try{
+        const u = new URL(input.indexOf('http')===0?input:'https://'+input);
+        const host = u.hostname.replace('www.','');
+        if(host==='youtu.be') return u.pathname.slice(1).split(/\?/)[0];
+        if(host.endsWith('youtube.com')){
+          const p = u.pathname.split('/').filter(Boolean);
+          if(u.searchParams.get('v')) return u.searchParams.get('v');
+          if(p[0]==='shorts' && p[1]) return p[1];
+          if(p[0]==='embed' && p[1]) return p[1];
+          if(p[0]==='live' && p[1]) return p[1];
+        }
+      }catch(e){
+        // maybe it's like youtube.com/watch?v=ID without protocol
+        const m = input.match(/(?:v=|\/)([A-Za-z0-9_-]{11})/);
+        if(m) return m[1];
+      }
+      return null;
+    }
+
+    // API call with backoff
+    async function fetchVideo(videoId){
+      if(!apiKey) throw {type:'no_key',message:'API key required'};
+      const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&id=${encodeURIComponent(videoId)}&key=${apiKey}`;
+      try{
+        const res = await fetch(url);
+        if(!res.ok){
+          let body; try{body=await res.json()}catch(e){body={}};
+          if(res.status===403 || (body && body.error && body.error.errors && body.error.errors[0] && body.error.errors[0].reason==='quotaExceeded')){
+            throw {type:'quota',message:'Quota exceeded',body};
+          }
+          throw {type:'http',status:res.status,body};
+        }
+        const json = await res.json();
+        if(!json.items || json.items.length===0) throw {type:'notfound',message:'Video not found'};
+        backoff.attempts=0; backoff.delay=1000;
+        return json.items[0];
+      }catch(err){
+        // network offline
+        if(!navigator.onLine) throw {type:'offline',message:'Offline'};
+        // rethrow structured errors
+        if(err.type) throw err;
+        throw {type:'network',message:err.message||String(err)};
+      }
+    }
+
+    function scheduleNextPoll(delaySec){
+      if(pollTimer) {clearTimeout(pollTimer); pollTimer=null}
+      const delay = (typeof delaySec==='number' ? delaySec : pollInterval)*1000;
+      nextUpdateAt = Date.now()+delay;
+      pollTimer = setTimeout(()=>pollNow().catch(()=>{}), delay);
+      startCountdown();
+    }
+
+    function startCountdown(){
+      if(countdownTimer) clearInterval(countdownTimer);
+      countdownTimer = setInterval(()=>{
+        if(!nextUpdateAt){countdownEl.textContent='';return}
+        const s = Math.max(0, Math.ceil((nextUpdateAt-Date.now())/1000));
+        countdownEl.textContent = `next: ${s}s`;
+      },250);
+    }
+
+    async function pollNow(){
+      if(!tracking.videoId) return;
+      try{
+        const item = await fetchVideo(tracking.videoId);
+        const viewCount = Number(item.statistics.viewCount||0);
+        const now = Date.now();
+        const title = item.snippet && item.snippet.title ? item.snippet.title : '';
+        if(tracking.startTime===null){ tracking.startTime = now; tracking.startCount = viewCount; tracking.lastCount = viewCount; tracking.title=title; titleEl.textContent = title; }
+        const delta = viewCount - tracking.lastCount;
+        const elapsedMinutes = (now - (tracking.data.length?tracking.data[tracking.data.length-1].ts: now))/60000 || 0.000001;
+        const vel = elapsedMinutes>0 ? delta/elapsedMinutes : 0;
+        tracking.lastCount = viewCount;
+        tracking.data.push({ts:now,count:viewCount,delta,vel});
+        tracking.velocities.push(vel);
+        if(tracking.velocities.length>20) tracking.velocities.shift();
+        if(vel>tracking.peakVel) tracking.peakVel=vel;
+        // update UI
+        updateCountAnimated(viewCount);
+        updateStats();
+        appendLog({ts:now,count:viewCount,delta,vel});
+        updatedEl.textContent = 'Updated: '+(new Date()).toLocaleTimeString();
+        backoff.attempts=0; backoff.delay=1000;
+        // schedule next
+        scheduleNextPoll();
+      }catch(err){
+        handleError(err);
+      }
+    }
+
+    function handleError(err){
+      console.error(err);
+      if(err.type==='no_key'){
+        inputError.style.display='block'; inputError.textContent = 'Enter API key in settings.'; updatedEl.textContent = 'Error: API key missing';
+        return;
+      }
+      if(err.type==='quota'){
+        inputError.style.display='block'; inputError.textContent = 'API quota exceeded. Retrying...';
+        updatedEl.textContent = 'Quota exceeded — retrying';
+        backoff.attempts++;
+        backoff.delay = Math.min(5*60*1000, backoff.delay * 2);
+        nextUpdateAt = Date.now() + backoff.delay;
+        if(pollTimer) clearTimeout(pollTimer);
+        pollTimer = setTimeout(()=>pollNow().catch(()=>{}), backoff.delay);
+        startCountdown();
+        return;
+      }
+      if(err.type==='notfound'){
+        inputError.style.display='block'; inputError.textContent = 'Video not found'; updatedEl.textContent='Video not found';
+        return;
+      }
+      if(err.type==='offline'){
+        inputError.style.display='block'; inputError.textContent = 'Offline — waiting for connection'; updatedEl.textContent='Waiting for connection';
+        // wait for online
+        return;
+      }
+      // generic network/http
+      inputError.style.display='block'; inputError.textContent = 'Network error — retrying';
+      backoff.attempts++;
+      backoff.delay = Math.min(5*60*1000, backoff.delay * 2);
+      nextUpdateAt = Date.now() + backoff.delay;
+      if(pollTimer) clearTimeout(pollTimer);
+      pollTimer = setTimeout(()=>pollNow().catch(()=>{}), backoff.delay);
+      startCountdown();
+    }
+
+    function updateCountAnimated(target){
+      const prev = Number(countEl.dataset.value || 0);
+      const start = prev || 0;
+      const end = target || 0;
+      countEl.dataset.value = String(end);
+      const duration = 1500; const startTime = performance.now();
+      function easeOutExpo(t){ return t===1?1:1-Math.pow(2,-10*t); }
+      cancelAnimationFrame(countEl._raf||0);
+      function step(now){
+        const t = Math.min(1, (now-startTime)/duration);
+        const v = Math.round(start + (end-start)*easeOutExpo(t));
+        countEl.textContent = v.toLocaleString();
+        if(t<1) countEl._raf = requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }
+
+    function updateStats(){
+      const now = Date.now();
+      const totalGain = tracking.lastCount - tracking.startCount;
+      gainedEl.textContent = (totalGain>=0?'+':'') + fmt(totalGain);
+      // live velocity = last velocity (from last two points)
+      const lastVel = tracking.data.length>=2 ? tracking.data[tracking.data.length-1].vel : 0;
+      liveVelEl.textContent = lastVel?lastVel.toFixed(2):'0.00';
+      const elapsedMinutes = (now - tracking.startTime)/60000 || 0.000001;
+      const avg = (tracking.lastCount - tracking.startCount)/elapsedMinutes;
+      avgVelEl.textContent = avg?avg.toFixed(2):'0.00';
+      // peak
+      // sparkline
+      drawSpark(tracking.velocities);
+    }
+
+    function drawSpark(vals){
+      const svg = spark; const w=100,h=100;
+      svg.setAttribute('viewBox',`0 0 ${w} ${h}`);
+      if(!vals||vals.length===0){ svg.innerHTML = ''; return }
+      const max = Math.max(...vals,1); const min = Math.min(...vals,0);
+      const range = Math.max( (max-min), 1e-6 );
+      const N = 100; // width units
+      const step = N/(Math.max(vals.length-1,1));
+      const points = vals.map((v,i)=>{
+        const x = (i*step);
+        const y = h - ((v-min)/range)*(h-6) - 3;
+        return [x,y];
+      });
+      const path = points.map((p,i)=> (i===0? 'M':'L') + p[0].toFixed(2)+','+p[1].toFixed(2)).join(' ');
+      // trend color (compare last two points)
+      let trendColor = 'var(--muted)';
+      if(vals.length>=2){ trendColor = (vals[vals.length-1] >= vals[vals.length-2])? 'var(--accent)':'var(--danger)'; }
+      svg.innerHTML = `<defs><linearGradient id="g1" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="${trendColor}" stop-opacity="1"/><stop offset="1" stop-color="${trendColor}" stop-opacity="0.06"/></linearGradient></defs>
+        <path d="${path}" fill="none" stroke="${trendColor}" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" />
+        <path d="${path} L ${w} ${h} L 0 ${h} Z" fill="url(#g1)" opacity="0.14" />`;
+    }
+
+    function appendLog(item){
+      const d = new Date(item.ts);
+      const time = d.toLocaleTimeString();
+      const row = document.createElement('div'); row.className='log-item';
+      row.innerHTML = `<div>${time} | ${fmt(item.count)}</div><div>${item.delta>=0?'+':''}${fmt(item.delta)} | ${item.vel?item.vel.toFixed(2):'0.00'}</div>`;
+      logEl.insertBefore(row, logEl.firstChild);
+    }
+
+    function clearSession(){
+      tracking = {videoId:tracking.videoId,title:'',startTime:null,startCount:0,lastCount:0,data:[],velocities:[],peakVel:0};
+      titleEl.textContent=''; countEl.textContent='—'; gainedEl.textContent='+0'; liveVelEl.textContent='0'; avgVelEl.textContent='0'; logEl.innerHTML=''; updatedEl.textContent='Session cleared';
+    }
+
+    function copyLog(){
+      const rows = Array.from(logEl.querySelectorAll('.log-item')).map(r=>r.textContent.trim()).join('\n');
+      navigator.clipboard.writeText(rows).then(()=>{updatedEl.textContent='Log copied to clipboard'})
+    }
+
+    // track button
+    trackBtn.addEventListener('click',()=>{
+      inputError.style.display='none';
+      const raw = urlInput.value.trim();
+      const id = extractVideoId(raw);
+      if(!id){ inputError.style.display='block'; inputError.textContent='Invalid YouTube URL or ID'; return; }
+      startTracking(id);
+    });
+
+    async function startTracking(id){
+      // reset session
+      clearSession();
+      tracking.videoId = id; tracking.startTime = null; tracking.startCount = 0; tracking.lastCount = 0;
+      inputError.style.display='none';
+      // immediate fetch
+      try{ await pollNow(); }catch(e){ console.error(e); }
+    }
+
+    // network events
+    window.addEventListener('online',()=>{ inputError.style.display='none'; updatedEl.textContent='Back online'; if(tracking.videoId) pollNow(); });
+    window.addEventListener('offline',()=>{ inputError.style.display='block'; inputError.textContent='Offline — waiting for connection'; updatedEl.textContent='Offline'; });
+
+    // allow Enter key
+    urlInput.addEventListener('keydown',e=>{ if(e.key==='Enter'){ trackBtn.click(); } });
+
+    // expose manual polling via double-click on count
+    countEl.addEventListener('dblclick',()=>{ if(tracking.videoId) pollNow(); });
+
+    // load api key from storage on start
+    if(apiKey){ apiKeyInput.value = apiKey; }
+
+    // last updated/next update
+    updatedEl.textContent = 'Idle';
+
+    // mark complete in todo list
+    // done: create file and implement all features
+  })();
+  </script>
+</body>
+</html>

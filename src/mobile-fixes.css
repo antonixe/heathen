@@ -1,0 +1,38 @@
+.mobile-track-fab {
+  display: none !important;
+}
+
+@media (max-width: 600px) {
+  .topbar .track-button {
+    display: none !important;
+  }
+
+  .mobile-track-fab {
+    position: fixed;
+    z-index: var(--z-sticky);
+    right: var(--s4);
+    bottom: var(--s4);
+    display: grid !important;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    place-items: center;
+    border: 0;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--bg);
+    font-family: var(--font-mono);
+    font-size: 1.5rem;
+  }
+
+  .system-banner {
+    grid-template-columns: 1fr auto !important;
+    gap: var(--s1) var(--s2);
+    padding: var(--s2) var(--s3) !important;
+  }
+
+  .system-banner p {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}
