@@ -1073,6 +1073,18 @@
 }
 
 @media (max-width: 767px) {
+  /* Stack workspace notices; a sideways-scrolling ribbon hides them on phones. */
+  .status-ribbon { flex-direction: column; }
+
+  .status-item {
+    min-width: 0;
+    border-right: 0;
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .status-item:last-child { border-bottom: 0; }
+  .status-item > span:not(.status-dot) { min-width: 0; }
+
   .rundown-workspace { padding: 0 .75rem 1.25rem; }
 
   .rundown-masthead {
@@ -1123,8 +1135,6 @@
 
   .release-art { width: 58px; }
   .release-row { padding: .75rem .65rem; }
-  .release-target { grid-column: 1 / -1; }
-  .release-poll { grid-column: 1 / -1; }
   .heatmap-grid { --cell: 16px; grid-template-columns: 56px repeat(24, var(--cell)); }
 }
 

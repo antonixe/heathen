@@ -567,9 +567,15 @@
 }
 
 @media (max-width: 767px) {
-  .detail-layout { display: flex; flex-direction: column; }
-  .detail-workspace { order: 1; }
-  .detail-sidebar { order: 2; }
+  /* The whole view scrolls as one column; otherwise the pinned masthead leaves
+     barely half the screen for content and the flexed workspace/sidebar overlap
+     inside it. !important because the competing overflow-hidden/flex-1 Tailwind
+     utilities live in a later cascade layer that specificity cannot beat. */
+  .detail-view { overflow: hidden auto !important; }
+  .detail-topbar { position: sticky; top: 0; z-index: 10; background: var(--background); }
+  .detail-layout { display: flex; flex: 0 0 auto !important; flex-direction: column; }
+  .detail-workspace { order: 1; flex: 0 0 auto; }
+  .detail-sidebar { order: 2; flex: 0 0 auto; }
   .detail-topbar { grid-template-columns: minmax(0, 1fr) auto; gap: .4rem; }
   .detail-product-label,
   .detail-top-title,
@@ -608,7 +614,10 @@
     max-width: 100vw !important;
     height: 100dvh !important;
     max-height: 100dvh !important;
+    /* Tailwind v4 centers dialogs with the standalone translate property, not
+       transform; both must be cleared or the dialog sits half off-screen. */
     transform: none !important;
+    translate: none !important;
     border: 0;
     border-radius: 0 !important;
   }

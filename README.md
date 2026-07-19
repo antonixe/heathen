@@ -40,16 +40,16 @@ Data lives only in the browser profile you use. Polling runs only while a tab is
 
 ### Cloud collector (optional)
 
-A GitHub Actions cron ([.github/workflows/collect.yml](.github/workflows/collect.yml)) polls every ~10 minutes even while your browser is closed, so gaps get coarse fill instead of nothing. It appends snapshots to a `data` branch (kept separate from `main` so Vercel doesn't redeploy); on app load, `src/utils/backfill.js` fetches them and replays anything newer than each video's last local observation through the normal ingestion path.
+A Vercel serverless function ([api/collect.js](api/collect.js)), triggered every ~10 minutes by a free [cron-job.org](https://cron-job.org) job, polls YouTube even while your browser is closed, so gaps get coarse fill instead of nothing. It appends snapshots to a `data` branch through the GitHub contents API (kept separate from `main` so nothing redeploys); on app load, `src/utils/backfill.js` fetches them and replays anything newer than each video's last local observation through the normal ingestion path.
 
 The watchlist syncs automatically: whenever the tracked set changes in the app, `src/utils/watchlistSync.js` pushes `watchlist.json` to the `data` branch through the GitHub contents API.
 
 To enable it:
 
-1. Add a repo secret named `YOUTUBE_API_KEY` (**Settings → Secrets and variables → Actions**).
-2. Create a [fine-grained personal access token](https://github.com/settings/personal-access-tokens/new) scoped to **only this repository** with **Contents: read and write** (nothing else), and paste it in **Settings → API → GitHub token**. Like the YouTube key it is stored in plaintext in IndexedDB and excluded from backups.
-3. The repo must be public (or Pages-proxied) for the client to fetch `raw.githubusercontent.com/.../data/snapshots.json`.
-4. Run the **Collect snapshots** workflow once by hand (**Actions → Collect snapshots → Run workflow**) to create the `data` branch; after that the cron and the watchlist sync take care of themselves.
+1. Create a [fine-grained personal access token](https://github.com/settings/personal-access-tokens/new) scoped to **only this repository** with **Contents: read and write** (nothing else). Paste it in **Settings → API → GitHub token** in the app (stored in plaintext in IndexedDB like the YouTube key; excluded from backups).
+2. In Vercel → project → **Settings → Environment Variables**, add `YOUTUBE_API_KEY` (the same key the app uses), `GITHUB_TOKEN` (the PAT from step 1, or a second one like it), and `CRON_SECRET` (any long random string), then redeploy.
+3. At [cron-job.org](https://cron-job.org), create a job hitting `https://<your-app>.vercel.app/api/collect` every 10 minutes with a request header `Authorization: Bearer <CRON_SECRET>`.
+4. The repo must be public for the client to fetch `raw.githubusercontent.com/.../data/snapshots.json`.
 
 Collector quota is ~150 units/day for up to 50 videos (1 unit per run) and is not counted by the in-app quota meter.
 
