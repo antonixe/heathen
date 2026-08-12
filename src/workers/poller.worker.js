@@ -1,7 +1,8 @@
+import { fetchYouTubeVideo } from '../utils/youtube.js'
+
 const jobs = new Map()
 const backoffs = [5000, 15000, 45000, 120000, 120000]
 let apiKey = ''
-let stagger = 0
 
 function clearJob(videoId) {
   const job = jobs.get(videoId)
@@ -21,52 +22,44 @@ function schedule(videoId, delay) {
 async function poll(videoId) {
   const job = jobs.get(videoId)
   if (!job || job.paused) return
-  const params = new URLSearchParams({ part: 'statistics,snippet', id: videoId, key: apiKey })
   try {
-    const response = await fetch(`https://www.googleapis.com/youtube/v3/videos?${params}`)
-    const body = await response.json().catch(() => ({}))
-    if (!response.ok) {
-      const reason = body?.error?.errors?.[0]?.reason
-      const code = response.status === 403 ? (reason === 'quotaExceeded' ? 'QUOTA' : 'FORBIDDEN') : response.status
-      throw Object.assign(new Error(body?.error?.message || `HTTP ${response.status}`), { code })
-    }
-    if (!body.items?.length) throw Object.assign(new Error('Video not found.'), { code: 404 })
-    const item = body.items[0]
+    const data = await fetchYouTubeVideo(videoId, apiKey)
     job.attempt = 0
-    postMessage({
-      type: 'DATA', videoId, timestamp: Date.now(), viewCount: Number(item.statistics?.viewCount || 0),
-      title: item.snippet?.title, channelName: item.snippet?.channelTitle,
-      thumbnailUrl: item.snippet?.thumbnails?.medium?.url || item.snippet?.thumbnails?.default?.url || '',
-    })
+    postMessage({ type: 'DATA', timestamp: Date.now(), ...data })
     schedule(videoId, job.pollInterval * 1000)
   } catch (error) {
     const code = error.code ?? 'NETWORK'
     postMessage({ type: 'ERROR', videoId, code, message: error.message || 'Polling failed.' })
-    if (code === 403 || code === 'FORBIDDEN' || code === 'QUOTA') {
-      clearJob(videoId)
-      postMessage({ type: 'QUOTA_WARNING', videoId })
-    } else if (code === 404) clearJob(videoId)
+    if (code === 403 || code === 'FORBIDDEN' || code === 'QUOTA' || code === 404 || code === 'NO_KEY') clearJob(videoId)
     else if (job.attempt < backoffs.length) schedule(videoId, backoffs[job.attempt++])
-    else { job.paused = true; postMessage({ type: 'GAVE_UP', videoId }) }
+    else job.paused = true
   }
 }
 
-function upsertVideos(videos, initial = false) {
+function upsertVideos(videos) {
   const wanted = new Set(videos.map(video => video.videoId))
   for (const id of jobs.keys()) if (!wanted.has(id)) clearJob(id)
   videos.forEach((video, index) => {
     const existing = jobs.get(video.videoId)
     if (existing) { existing.pollInterval = Number(video.pollInterval) || 60; return }
     jobs.set(video.videoId, { videoId: video.videoId, pollInterval: Number(video.pollInterval) || 60, timer: null, attempt: 0, paused: false })
-    schedule(video.videoId, initial ? (stagger++ + index) * 2000 : index * 2000)
+    schedule(video.videoId, index * 2000)
   })
 }
 
 self.onmessage = event => {
   const message = event.data
-  if (message.type === 'START') { apiKey = message.apiKey; stagger = 0; upsertVideos(message.videos, true) }
-  if (message.type === 'UPDATE_CONFIG') upsertVideos(message.videos)
+  if (message.type === 'START') { apiKey = message.apiKey; upsertVideos(message.videos) }
   if (message.type === 'STOP_ALL') { for (const id of [...jobs.keys()]) clearJob(id) }
-  if (message.type === 'PAUSE') { const job = jobs.get(message.videoId); if (job) { job.paused = true; clearTimeout(job.timer) } }
-  if (message.type === 'RESUME') { const job = jobs.get(message.videoId); if (job) { job.paused = false; job.attempt = 0; schedule(message.videoId, 0) } }
+  // Manual refresh. Also the way back for a job that exhausted its backoff and parked itself,
+  // so clear the attempt count and the paused flag before rescheduling.
+  if (message.type === 'REFRESH_ALL') {
+    [...jobs.keys()].forEach((videoId, index) => {
+      const job = jobs.get(videoId)
+      if (!job) return
+      job.attempt = 0
+      job.paused = false
+      schedule(videoId, index * 120)
+    })
+  }
 }

@@ -4,10 +4,8 @@ import './HeatmapGrid.css'
 const DAY_MS = 24 * 60 * 60 * 1000
 const HOURS = Array.from({ length: 24 }, (_, hour) => hour)
 
-const dateKey = timestamp => {
-  const date = new Date(timestamp)
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-}
+// en-CA formats as YYYY-MM-DD in local time
+const dateKey = timestamp => new Date(timestamp).toLocaleDateString('en-CA')
 
 const dateFromKey = key => {
   const [year, month, day] = key.split('-').map(Number)

@@ -2,19 +2,13 @@ import { useEffect, useRef, useState } from 'react'
 
 export default function AnimatedCount({ value }) {
   const [display, setDisplay] = useState(value ?? 0)
-  const [pulsing, setPulsing] = useState(false)
   const previous = useRef(value ?? 0)
+  const mounted = useRef(value ?? 0)
 
   useEffect(() => {
     const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches
     const startValue = previous.current
-    let frame, pulseFrame, pulseTimer
-
-    if (startValue !== value && !reducedMotion) {
-      setPulsing(false)
-      pulseFrame = requestAnimationFrame(() => setPulsing(true))
-      pulseTimer = setTimeout(() => setPulsing(false), 800)
-    }
+    let frame
 
     if (reducedMotion) {
       setDisplay(value)
@@ -31,12 +25,9 @@ export default function AnimatedCount({ value }) {
       else previous.current = value
     }
     frame = requestAnimationFrame(tick)
-    return () => {
-      cancelAnimationFrame(frame)
-      cancelAnimationFrame(pulseFrame)
-      clearTimeout(pulseTimer)
-    }
+    return () => cancelAnimationFrame(frame)
   }, [value])
 
-  return <span className={`animated-count${pulsing ? ' is-pulsing' : ''}`}>{Number(display || 0).toLocaleString()}</span>
+  // remounting on a new value restarts the CSS ring animation; no timers needed
+  return <span className="animated-count">{value !== mounted.current && <i className="pulse-ring" key={value} aria-hidden="true" />}{Number(display || 0).toLocaleString()}</span>
 }

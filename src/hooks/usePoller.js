@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { db, addObservation } from '../db/db.js'
 import { incrementQuota } from './useQuota.js'
 import { getAllVelocityWindows } from '../utils/velocity.js'
@@ -32,20 +32,20 @@ export function usePoller(videos, apiKey, paused, onToast) {
           const change = (current - prior) / prior
           if (change <= -0.4 || change >= 0.8) {
             const text = `${video?.customLabel || video?.title || message.videoId}: ${prior.toFixed(1)} to ${current.toFixed(1)} v/min`
-            latestToast.current?.(change < 0 ? 'Velocity cliff' : 'Velocity surge', text)
+            latestToast.current?.(change < 0 ? 'Velocity cliff' : 'Velocity surge', text, change < 0 ? 'down' : 'up')
             notify(change < 0 ? 'Velocity cliff' : 'Velocity surge', text)
           }
         }
         crossed.forEach(row => {
           const text = `${video?.customLabel || video?.title || message.videoId} hit ${row.targetCount.toLocaleString()}`
-          latestToast.current?.('Milestone crossed', text); notify('Milestone crossed', text)
+          latestToast.current?.('Milestone crossed', text, 'hit'); notify('Milestone crossed', text)
         })
-        if (used === 8000) latestToast.current?.('Quota warning', 'YouTube quota reached 80%.')
+        if (used === 8000) latestToast.current?.('Quota warning', 'YouTube quota reached 80%.', 'warn')
         if (used >= 9500) worker.postMessage({ type: 'STOP_ALL' })
       }
       if (message.type === 'ERROR') {
         await db.videos.where('videoId').equals(message.videoId).modify({ pollState: message.code === 404 ? 'not-found' : message.code === 'QUOTA' ? 'quota' : 'error', errorCode: message.code, errorMessage: message.message })
-        latestToast.current?.('Polling error', message.message)
+        latestToast.current?.('Polling error', message.message, 'down')
       }
       if (message.type === 'SCHEDULED') await db.videos.where('videoId').equals(message.videoId).modify({ nextPollAt: message.nextAt })
     }
@@ -60,4 +60,7 @@ export function usePoller(videos, apiKey, paused, onToast) {
     if (!apiKey || paused) worker.postMessage({ type: 'STOP_ALL' })
     else worker.postMessage({ type: 'START', videos: config, apiKey })
   }, [videos, apiKey, paused])
+
+  // poll every tracked video now instead of waiting out its interval
+  return useCallback(() => workerRef.current?.postMessage({ type: 'REFRESH_ALL' }), [])
 }

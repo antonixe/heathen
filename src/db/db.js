@@ -22,13 +22,11 @@ db.version(2).stores({
   video.tags ??= []
 }))
 
+export const POLL_INTERVALS = [[30, '30s'], [60, '1m'], [120, '2m'], [300, '5m']]
+
 export const DEFAULT_SETTINGS = {
   apiKey: '', defaultPollInterval: 60, quotaUsedToday: 0,
   quotaResetDate: '', pollingPaused: false,
-}
-
-export async function getSetting(key) {
-  return (await db.settings.get(key))?.value ?? DEFAULT_SETTINGS[key]
 }
 
 export async function setSetting(key, value) {
@@ -57,6 +55,13 @@ export async function addObservation(videoId, viewCount, timestamp = Date.now())
       .and(row => !row.hitAt && viewCount >= row.targetCount).toArray()
     if (crossed.length) await db.milestones.bulkUpdate(crossed.map(row => ({ key: row.id, changes: { hitAt: timestamp } })))
     return { point, crossed }
+  })
+}
+
+export async function removeVideo({ id, videoId }) {
+  return db.transaction('rw', db.videos, db.datapoints, db.notes, db.milestones, async () => {
+    await db.videos.delete(id)
+    await Promise.all([db.datapoints, db.notes, db.milestones].map(table => table.where('videoId').equals(videoId).delete()))
   })
 }
 

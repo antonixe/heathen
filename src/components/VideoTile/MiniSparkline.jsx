@@ -2,7 +2,8 @@ import { detectBatchFlush } from '../../utils/velocity.js'
 
 export default function MiniSparkline({ points }) {
   const data = points.slice(-30), flags = new Set(detectBatchFlush(data))
-  if (data.length < 2) return <div className="spark-empty">Waiting for a second sample</div>
+  // the count column already explains the wait; this sits in an 88px slot, so keep it to a glyph
+  if (data.length < 2) return <div className="spark-empty">—</div>
   const values = data.map(point => point.velocityPerMin ?? 0)
   const min = Math.min(...values, 0), max = Math.max(...values, 1), range = max - min || 1
   const coords = values.map((value, index) => ({ x: index * 100 / (values.length - 1), y: 72 - ((value - min) / range) * 64 }))

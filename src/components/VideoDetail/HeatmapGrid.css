@@ -1,4 +1,4 @@
-.heatmap-section { padding-top: var(--s5); }
+.heatmap-section { padding-top: var(--s4); }
 .heatmap-section > header { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); margin-bottom: var(--s3); }
 .heatmap-peak { color: var(--ink-3); font-family: var(--font-mono); font-size: .7rem; }
 .heatmap-placeholder { display: grid; min-height: 104px; place-items: center; border: 1px solid var(--border-soft); background: var(--surface); color: var(--ink-3); font-family: var(--font-mono); font-size: .75rem; }

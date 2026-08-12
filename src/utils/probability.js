@@ -1,4 +1,4 @@
-import { fitDecayCurve, getAllVelocityWindows, integratedViews, projectViewsAtTime, getTimeToMilestone } from './velocity.js'
+import { getAllVelocityWindows, integratedViews, model, projectViewsAtTime, getTimeToMilestone, seasonalFactor } from './velocity.js'
 
 function normal(random) {
   const a = Math.max(Number.EPSILON, random())
@@ -14,10 +14,10 @@ export function getMilestoneProbability(datapoints, targetCount, deadlineTimesta
   if (!points.length || !Number.isFinite(targetCount) || !Number.isFinite(deadlineTimestamp)) return null
   const now = options.now ?? Date.now(), current = Number(points.at(-1).viewCount), gap = targetCount - current
   const minutesRemaining = (deadlineTimestamp - now) / 60000, windows = getAllVelocityWindows(points)
-  const currentVelocity = Math.max(0, [windows.v5m, windows.v30m, windows.v1h, windows.sessionAvg].find(v => v !== null) ?? 0)
+  const currentVelocity = Math.max(0, [windows.v30m, windows.v1h, windows.sessionAvg].find(v => v !== null) ?? 0)
   const requiredVelocity = gap <= 0 ? 0 : minutesRemaining > 0 ? gap / minutesRemaining : Infinity
   const projection = projectViewsAtTime(points, deadlineTimestamp) ?? { projected: current, low: current, high: current }
-  const fit = fitDecayCurve(points), hit = getTimeToMilestone(points, targetCount, current)
+  const { fit, profile, velocity } = model(points), hit = getTimeToMilestone(points, targetCount, current)
   const confidence = fit?.r2 >= 0.75 && points.length >= 20 ? 'high' : fit?.r2 >= 0.5 && points.length >= 10 ? 'medium' : 'low'
   if (gap <= 0 || minutesRemaining <= 0) return {
     probability: gap <= 0 ? 1 : 0, requiredVelocity, currentVelocity, cushion: currentVelocity - requiredVelocity,
@@ -25,15 +25,19 @@ export function getMilestoneProbability(datapoints, targetCount, deadlineTimesta
     estimatedHitTime: gap <= 0 ? points.at(-1).timestamp : null, confidence,
   }
   const horizon = Math.max(0, (deadlineTimestamp - points.at(-1).timestamp) / 60000)
-  const age = fit ? (points.at(-1).timestamp - fit.originTimestamp) / 60000 : 0
-  const velocity = fit ? fit.v0 * Math.exp(-fit.k * age) : currentVelocity
   const simulations = options.simulations ?? 500
   const random = options.random ?? seededRandom((points.length * 2654435761 + Math.round(targetCount) + Math.round(deadlineTimestamp / 60000)) >>> 0)
+  // same hour-of-day correction the projection uses, so the two numbers cannot disagree
+  const shape = seasonalFactor(profile, points.at(-1).timestamp, horizon, fit?.k ?? 0)
   let reached = 0
   for (let i = 0; i < simulations; i += 1) {
-    const k = fit ? Math.max(0, fit.k + normal(random) * fit.k * 0.2) : 0
-    const sampledVelocity = Math.max(0, velocity * (1 + normal(random) * (fit ? 0.08 : 0.25)))
-    if (current + integratedViews(sampledVelocity, k, horizon) >= targetCount) reached += 1
+    // draw from the regression's own standard errors — velocity is lognormal since the fit is in log space.
+    // Without a fit there is nothing to estimate from, so a flat 25% CV stands in.
+    const k = fit ? Math.max(0, fit.k + normal(random) * fit.kSE) : 0
+    const sampledVelocity = fit
+      ? velocity * Math.exp(normal(random) * fit.logSE)
+      : Math.max(0, velocity * (1 + normal(random) * 0.25))
+    if (current + integratedViews(sampledVelocity, k, horizon) * shape >= targetCount) reached += 1
   }
   return {
     probability: reached / simulations, requiredVelocity, currentVelocity, cushion: currentVelocity - requiredVelocity,
