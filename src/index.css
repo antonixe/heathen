@@ -45,7 +45,7 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 html { min-width: 320px; background: var(--bg); }
-body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--ink); font-family: var(--font-ui); font-size: .875rem; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+body { margin: 0; min-height: 100vh; min-height: 100dvh; background: var(--bg); color: var(--ink); font-family: var(--font-ui); font-size: .875rem; line-height: 1.6; -webkit-font-smoothing: antialiased; }
 ::selection { background: var(--accent-dim); color: var(--ink); }
 /* Chrome 121+/Firefox/Safari 18.2+ honour the standard properties and ignore the -webkit- pseudos;
    older WebKit does the reverse, so both are declared and exactly one wins per browser. */
@@ -79,9 +79,9 @@ h3, .eyebrow, .section-label { color: var(--ink-3); font-size: .68rem; font-weig
 kbd { margin-left: var(--s1); color: currentColor; font-family: var(--font-mono); font-size: .66rem; opacity: .65; }
 code, time { font-family: var(--font-mono); }
 .help, .field-hint { color: var(--ink-3); font-size: .75rem; }
-.loading-fallback { display: grid; min-height: 100vh; place-items: center; color: var(--ink-3); font-family: var(--font-mono); }
+.loading-fallback { display: grid; min-height: 100dvh; place-items: center; color: var(--ink-3); font-family: var(--font-mono); }
 
-.app-shell { min-height: 100vh; }
+.app-shell { min-height: 100dvh; }
 .topbar { position: sticky; z-index: var(--z-sticky); top: 0; height: 52px; border-bottom: 1px solid var(--border); background: oklch(0.09 0.018 268 / .92); backdrop-filter: blur(12px); }
 .topbar-inner { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; width: min(100%, 1100px); height: 100%; margin: 0 auto; padding: 0 var(--s5); }
 .brand { display: flex; align-items: center; gap: var(--s3); min-width: 0; }
@@ -172,7 +172,7 @@ code, time { font-family: var(--font-mono); }
 .spark circle { fill: none; stroke: var(--batch); stroke-width: 1.5; }
 .spark-empty { color: var(--ink-3); font-family: var(--font-mono); font-size: .72rem; }
 .expanded-stats { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--s3); color: var(--ink-2); font-family: var(--font-mono); font-size: .72rem; }
-.empty-state { display: grid; min-height: calc(100vh - 52px); align-content: center; justify-items: center; cursor: pointer; }
+.empty-state { display: grid; min-height: calc(100dvh - 52px); align-content: center; justify-items: center; cursor: pointer; }
 .empty-state strong { color: var(--ink-3); font-family: var(--font-mono); font-size: 3rem; font-weight: 400; letter-spacing: -.05em; }
 .empty-state p { margin: var(--s2) 0 0; color: var(--ink-3); font-size: .875rem; }
 
@@ -184,7 +184,7 @@ code, time { font-family: var(--font-mono); }
 .ask menu { display: flex; justify-content: flex-end; gap: var(--s2); margin: 0; padding: 0; }
 
 .overlay { position: fixed; z-index: var(--z-modal-bg); inset: 0; display: grid; place-items: center; background: oklch(0 0 0 / .7); backdrop-filter: blur(4px); }
-.modal { z-index: var(--z-modal); width: calc(100% - var(--s6)); max-width: 560px; max-height: calc(100vh - var(--s6)); overflow-y: auto; border: 1px solid var(--border); border-radius: var(--r3); background: var(--surface-2); animation: modal-in 200ms cubic-bezier(.16, 1, .3, 1); }
+.modal { z-index: var(--z-modal); width: calc(100% - var(--s6)); max-width: 560px; max-height: calc(100svh - var(--s6)); overflow-y: auto; border: 1px solid var(--border); border-radius: var(--r3); background: var(--surface-2); animation: modal-in 200ms cubic-bezier(.16, 1, .3, 1); }
 .modal > header, .modal > footer, .settings-panel > header, .settings-panel > footer { display: flex; align-items: center; justify-content: space-between; gap: var(--s4); padding: var(--s4); border-bottom: 1px solid var(--border); }
 .modal > footer, .settings-panel > footer { border-top: 1px solid var(--border); border-bottom: 0; }
 .modal h2, .settings-panel h2 { font-size: 1.05rem; }
@@ -211,7 +211,7 @@ code, time { font-family: var(--font-mono); }
 .add-modal > footer { display: grid; grid-template-columns: auto 1fr; }
 .add-modal > footer .primary { width: 100%; height: 40px; }
 .panel-overlay { place-items: stretch end; }
-.settings-panel { z-index: var(--z-modal); width: 380px; height: 100vh; overflow-y: auto; border-left: 1px solid var(--border); background: var(--surface-2); animation: panel-in 280ms cubic-bezier(.16, 1, .3, 1); }
+.settings-panel { z-index: var(--z-modal); width: 380px; height: 100dvh; overflow-y: auto; border-left: 1px solid var(--border); background: var(--surface-2); animation: panel-in 280ms cubic-bezier(.16, 1, .3, 1); }
 .settings-panel > header { position: sticky; z-index: 1; top: 0; background: var(--surface-2); }
 .settings-panel > footer { position: sticky; bottom: 0; background: var(--surface-2); }
 .settings-panel section { padding: var(--s5); border-bottom: 1px solid var(--border); }
@@ -240,7 +240,7 @@ code, time { font-family: var(--font-mono); }
 .segmented button.active { z-index: 1; border-color: var(--accent-border); background: var(--accent-dim); color: var(--accent); }
 .segmented.spread { justify-content: stretch; }
 .segmented.spread button { flex: 1; height: 34px; font-family: var(--font-mono); }
-.watch-rows { max-height: 60vh; overflow-y: auto; }
+.watch-rows { max-height: 60dvh; overflow-y: auto; }
 /* actions share one track so they never wrap to a second row when the thumbnail is hidden */
 .watch-row { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: var(--s3); align-items: center; padding: var(--s3) var(--s4); border-bottom: 1px solid var(--border-soft); }
 .watch-row:last-child { border-bottom: 0; }
@@ -274,13 +274,14 @@ code, time { font-family: var(--font-mono); }
 .compare footer { color: var(--ink-3); font-family: var(--font-mono); font-size: .72rem; }
 
 /* rows instead of a hardcoded 100vh-52px, so the summary strip can size itself */
-.detail-page { position: fixed; z-index: var(--z-modal-bg); inset: 0; display: grid; grid-template-rows: auto auto minmax(0, 1fr); overflow: hidden; background: var(--bg); }
+.detail-page { position: fixed; z-index: var(--z-modal-bg); inset: 0; height: 100dvh; display: grid; grid-template-rows: auto auto minmax(0, 1fr); overflow: hidden; background: var(--bg); }
 .detail-top { display: flex; align-items: center; justify-content: space-between; min-height: 52px; padding: var(--s2) var(--s5); border-bottom: 1px solid var(--border); background: var(--bg); }
 .detail-heading, .detail-actions { display: flex; align-items: center; gap: var(--s2); min-width: 0; }
 /* the title ellipsises, the controls must not be shaved off to make room for it */
 .detail-actions { flex: none; }
 .detail-heading h1 { max-width: 50ch; overflow: hidden; font-size: .9rem; text-overflow: ellipsis; white-space: nowrap; }
-.detail-back { width: 32px; padding: 0; border-color: transparent; color: var(--ink-2); font-size: 1.1rem; }
+/* flex: none — it was being squeezed to 20px wide by a long title beside it */
+.detail-back { flex: none; width: 32px; padding: 0; border-color: transparent; color: var(--ink-2); font-size: 1.1rem; }
 .detail-actions button { height: 30px; padding: 5px 10px; }
 /* sidebar gives ground first on narrow laptops, so the chart is not left as mostly axis */
 .detail-title { display: grid; gap: 2px; min-width: 0; }
@@ -357,7 +358,7 @@ code, time { font-family: var(--font-mono); }
 .session-section header button { font-size: .9rem; line-height: 1; }
 
 /* the sidebar copy is for glancing; this one is for reading, so it gets Δ back and real width */
-.log-dialog { width: min(780px, calc(100vw - var(--s6))); max-height: calc(100vh - var(--s7)); padding: 0; border: 1px solid var(--border); border-radius: var(--r3); background: var(--surface-2); color: var(--ink); animation: modal-in 200ms cubic-bezier(.16, 1, .3, 1); }
+.log-dialog { width: min(780px, calc(100vw - var(--s6))); max-height: calc(100svh - var(--s7)); padding: 0; border: 1px solid var(--border); border-radius: var(--r3); background: var(--surface-2); color: var(--ink); animation: modal-in 200ms cubic-bezier(.16, 1, .3, 1); }
 .log-dialog::backdrop { background: oklch(0 0 0 / .7); backdrop-filter: blur(4px); }
 .log-dialog > header, .log-dialog > footer { display: flex; align-items: center; gap: var(--s3); padding: var(--s3) var(--s4); }
 .log-dialog > header { border-bottom: 1px solid var(--border); }
@@ -365,7 +366,7 @@ code, time { font-family: var(--font-mono); }
 .log-dialog > header span { color: var(--ink-3); font-family: var(--font-mono); font-size: .72rem; }
 .log-dialog > footer { justify-content: space-between; border-top: 1px solid var(--border); }
 .log-dialog > footer .export-link { margin: 0; }
-.log-dialog-scroll { max-height: calc(100vh - 200px); overflow: auto; }
+.log-dialog-scroll { max-height: calc(100svh - 200px); overflow: auto; }
 /* TIME carries "06:08:50 pm" in 12-hour locales, which needs more than an even quarter */
 .log-wide th:nth-child(1) { width: 26%; }
 .log-wide th:nth-child(2) { width: 32%; }
@@ -420,7 +421,8 @@ tr.is-batch td:first-child { box-shadow: inset 2px 0 0 var(--batch); }
 
 @media (max-width: 900px) {
   .track-main { grid-template-columns: 32px minmax(0, 1fr) 240px 48px; }
-  .stats-col, .spark-col { display: none; }
+  .spark-col { display: none; }
+  .stats-col { display: none; }
   .settings-panel { width: 100%; }
   /* below this the 380px sidebar leaves the chart under ~400px, most of it axis. Stack instead. */
   .detail-page { display: block; overflow-y: auto; }
@@ -437,12 +439,25 @@ tr.is-batch td:first-child { box-shadow: inset 2px 0 0 var(--batch); }
   .topbar nav { grid-column: 2; }
   .top-icon em { display: none; }
   .dashboard { padding: 0 var(--s3); }
-  .track-main { grid-template-columns: 20px minmax(0, 1fr) minmax(130px, auto); gap: var(--s2); min-height: 100px; padding: var(--s3) var(--s2); }
-  .count-col { grid-column: 3; }
-  .hero-count { font-size: clamp(1.65rem, 7vw, 2.35rem); }
-  .actions-col { position: absolute; top: var(--s1); right: var(--s1); }
+  /* Stack rather than squeeze. Three columns at 375px left the title 138px wide, which is
+     unreadable for a real video title; full width beats a fourth of the screen. */
+  .track-main {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: "status identity actions" "count count count" "stats stats stats";
+    gap: var(--s2) var(--s3);
+    min-height: 0;
+    padding: var(--s3);
+  }
+  .status-col { grid-area: status; }
+  .identity-col { grid-area: identity; }
+  .actions-col { grid-area: actions; position: static; }
+  .count-col { grid-area: count; justify-items: start; text-align: left; }
+  .hero-count { font-size: clamp(1.65rem, 8vw, 2.35rem); }
+  /* velocity is the point of the app, so it stays on screen instead of hiding behind an expander */
+  .stats-col { grid-area: stats; display: flex; flex-wrap: wrap; gap: var(--s1) var(--s4); justify-content: flex-start; }
+  .stat-line { display: flex; gap: var(--s2); }
+  .stat-line i { min-width: 0; }
   .track-menu { top: 34px; }
-  .count-updated { display: none; }
   .expanded-signal { padding: 0 var(--s3); }
   .track-row.is-expanded .expanded-signal { height: 68px; }
   .expanded-stats { justify-content: flex-start; }
@@ -454,6 +469,12 @@ tr.is-batch td:first-child { box-shadow: inset 2px 0 0 var(--batch); }
   .detail-heading h1 { max-width: 24ch; }
   .detail-actions button:not(.menu-trigger) { padding: 5px 7px; font-size: .7rem; }
   .detail-main { padding: var(--s3); }
+  /* the cards took two thirds of a phone screen before the chart came into view */
+  .detail-summary { gap: var(--s2); padding: var(--s3); }
+  .stat-card { gap: var(--s1); padding: var(--s2) var(--s3); }
+  .stat-value { font-size: 1.15rem; }
+  .stat-card > header { font-size: .6rem; }
+  .stat-icon { width: 17px; height: 17px; }
   .chart-section { height: 364px; padding-bottom: var(--s5); }
   .chart-wrap { height: 300px; }
   .chart-section > header { align-items: flex-start; height: 64px; }
@@ -465,6 +486,27 @@ tr.is-batch td:first-child { box-shadow: inset 2px 0 0 var(--batch); }
   .compare-controls { grid-template-columns: 1fr; }
   .compare-controls span { text-align: center; }
   .toast-stack { right: var(--s3); bottom: var(--s3); width: calc(100vw - var(--s5)); }
+}
+
+/* Keyed to the input device, not the width: a narrow desktop window still has a precise mouse,
+   and a wide tablet still has fingers. 12 of 21 targets measured under 44px before this. */
+@media (pointer: coarse) {
+  button, select, input, textarea, [role="button"] { min-height: 44px; }
+  .topbar nav button, .top-icon { min-width: 44px; }
+  .identity-col, .count-col { min-height: 44px; }
+  .menu-trigger, .detail-back { min-width: 44px; }
+  .track-menu button { min-height: 44px; }
+  .segmented button { min-height: 44px; padding-inline: var(--s3); }
+  .row-actions button { min-height: 44px; }
+  .detail-actions button:not(.menu-trigger) { min-height: 44px; }
+  .close, button.plain { min-width: 44px; }
+  .export-link, .link { min-height: 44px; }
+  /* there is no hover on a touch screen, so the milestone figures were simply unreachable */
+  .milestone-progress { height: auto; padding-top: 7px; }
+  .milestone-progress > div { flex-wrap: wrap; opacity: 1; white-space: normal; }
+  /* 10.9px labels are unreadable at arm's length */
+  .track-channel, .poll-badge, .stat-line { font-size: .78rem; }
+  .validation-list em, .row-tags .badge { font-size: .72rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
