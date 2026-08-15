@@ -27,6 +27,8 @@ export const POLL_INTERVALS = [[30, '30s'], [60, '1m'], [120, '2m'], [300, '5m']
 export const DEFAULT_SETTINGS = {
   apiKey: '', defaultPollInterval: 60, quotaUsedToday: 0,
   quotaResetDate: '', pollingPaused: false,
+  // scheduled poller: when both are set the roster is pushed to it automatically
+  syncUrl: '', syncToken: '',
 }
 
 export async function setSetting(key, value) {

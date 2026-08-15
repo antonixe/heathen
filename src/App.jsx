@@ -3,6 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db, DEFAULT_SETTINGS, getAllSettings, setSetting } from './db/db.js'
 import { usePoller } from './hooks/usePoller.js'
 import { useKeyboard } from './hooks/useKeyboard.js'
+import { useTrackSync } from './hooks/useTrackSync.js'
 import Dashboard from './components/Dashboard/Dashboard.jsx'
 import AddVideoModal from './components/AddVideo/AddVideoModal.jsx'
 import SettingsPanel from './components/Settings/SettingsPanel.jsx'
@@ -27,6 +28,8 @@ export default function App() {
     setTimeout(() => setToasts(items => items.filter(item => item.id !== id)), tone === 'down' || tone === 'hit' ? 9000 : 5000)
   }, [])
   const pollNow = usePoller(videos, settings.apiKey, settings.pollingPaused, toast)
+  // keep the scheduled poller's roster in step with the app's, so it tracks what you track
+  useTrackSync(videos, settings.syncUrl, settings.syncToken, toast)
   const closeLayers = useCallback(() => { setAddOpen(false); setSettingsOpen(false); setWatchOpen(false); setCompareVideo(null) }, [])
   const active = videos.filter(video => video.status === 'active')
   // nothing to refresh without a key, while paused, or with an empty board

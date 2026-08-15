@@ -5,7 +5,7 @@ import { pacificDate } from '../../src/utils/day.js'
 const json = (body, status = 200) => new Response(JSON.stringify(body), {
   status,
   headers: { 'content-type': 'application/json', 'access-control-allow-origin': '*',
-    'access-control-allow-headers': 'authorization,content-type', 'access-control-allow-methods': 'GET,POST,OPTIONS' },
+    'access-control-allow-headers': 'authorization,content-type', 'access-control-allow-methods': 'GET,POST,DELETE,OPTIONS' },
 })
 
 const authorised = (request, env) =>
@@ -101,6 +101,14 @@ export default {
         .bind(body.videoId, body.title ?? null, body.channelName ?? null, body.thumbnailUrl ?? null,
           body.customLabel ?? '', (body.tags || []).join(','), body.status || 'active',
           Number(body.pollInterval) || 300, body.addedAt || now, now).run()
+      return json({ ok: true })
+    }
+
+    // removing a track in the app has to stop the poller too, or it keeps spending quota on a ghost
+    if (request.method === 'DELETE' && url.pathname === '/tracks') {
+      const videoId = url.searchParams.get('videoId')
+      if (!videoId) return json({ error: 'videoId required' }, 400)
+      await env.DB.prepare('delete from tracks where video_id = ?').bind(videoId).run()
       return json({ ok: true })
     }
 

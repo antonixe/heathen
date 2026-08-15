@@ -9,10 +9,15 @@ const SHORTCUTS = [['A', 'Add video'], ['R', 'Refresh all'], ['P', 'Pause all'],
 export default function SettingsPanel({ settings, onClose, onToast }) {
   const [apiKey, setApiKey] = useState(settings.apiKey || ''), [visible, setVisible] = useState(false)
   const [interval, setIntervalValue] = useState(settings.defaultPollInterval || 60), [clearing, setClearing] = useState(false)
+  const [syncUrl, setSyncUrl] = useState(settings.syncUrl || ''), [syncToken, setSyncToken] = useState(settings.syncToken || '')
   const importRef = useRef()
-  useEffect(() => { setApiKey(settings.apiKey || ''); setIntervalValue(settings.defaultPollInterval || 60) }, [settings])
+  useEffect(() => {
+    setApiKey(settings.apiKey || ''); setIntervalValue(settings.defaultPollInterval || 60)
+    setSyncUrl(settings.syncUrl || ''); setSyncToken(settings.syncToken || '')
+  }, [settings])
   const save = async () => {
-    await Promise.all([setSetting('apiKey', apiKey.trim()), setSetting('defaultPollInterval', Number(interval))])
+    await Promise.all([setSetting('apiKey', apiKey.trim()), setSetting('defaultPollInterval', Number(interval)),
+      setSetting('syncUrl', syncUrl.trim()), setSetting('syncToken', syncToken.trim())])
     onToast('Settings saved', 'Polling configuration has been updated.'); onClose()
   }
   const exportAll = async () => downloadFile(`velocity-desk-${Date.now()}.json`, JSON.stringify(await exportDatabase(), null, 2), 'application/json')
@@ -26,6 +31,10 @@ export default function SettingsPanel({ settings, onClose, onToast }) {
   const status = apiKey.trim() !== (settings.apiKey || '') ? { tone: 'paused', text: 'Unsaved change' }
     : settings.apiKey ? { tone: 'polling', text: 'Key saved' }
     : { tone: 'error', text: 'No key — polling is stopped' }
+  const syncDirty = syncUrl.trim() !== (settings.syncUrl || '') || syncToken.trim() !== (settings.syncToken || '')
+  const sync = syncDirty ? { tone: 'paused', text: 'Unsaved change' }
+    : settings.syncUrl && settings.syncToken ? { tone: 'polling', text: 'Pushing tracks to the poller' }
+    : { tone: 'idle', text: 'Not configured — tracking stops when this tab closes' }
   return <div className="overlay panel-overlay" onMouseDown={event => event.target === event.currentTarget && onClose()}>
     <aside className="settings-panel">
       <header><div><span className="eyebrow">LOCAL CONFIGURATION</span><h2>Settings</h2></div><button className="plain close" onClick={onClose}>ESC</button></header>
@@ -35,6 +44,13 @@ export default function SettingsPanel({ settings, onClose, onToast }) {
         <p className="key-status"><span className={`status-dot ${status.tone}`} />{status.text}</p>
         <QuotaBar />
         <p className="help">The browser sends this key directly to the YouTube Data API.</p>
+      </section>
+      <section>
+        <h3>SCHEDULED POLLER</h3>
+        <label>WORKER URL<input value={syncUrl} onChange={event => setSyncUrl(event.target.value)} placeholder="https://…workers.dev" /></label>
+        <label>SYNC TOKEN<input type={visible ? 'text' : 'password'} value={syncToken} onChange={event => setSyncToken(event.target.value)} placeholder="Bearer token" /></label>
+        <p className="key-status"><span className={`status-dot ${sync.tone}`} />{sync.text}</p>
+        <p className="help">Tracks are pushed here automatically so polling continues while every browser is closed.</p>
       </section>
       <section>
         <h3>POLLING</h3>
