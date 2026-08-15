@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { db, exportDatabase, importDatabase, POLL_INTERVALS, setSetting } from '../../db/db.js'
 import { downloadFile } from '../../utils/export.js'
 import Ask from '../shared/Ask.jsx'
+import QuotaBar from '../QuotaBar/QuotaBar.jsx'
 
 const SHORTCUTS = [['A', 'Add video'], ['R', 'Refresh all'], ['P', 'Pause all'], ['S', 'Settings'], ['W', 'Watchlist'], ['1–9', 'Focus track'], ['ESC', 'Close panel']]
 
@@ -32,6 +33,7 @@ export default function SettingsPanel({ settings, onClose, onToast }) {
         <h3>YOUTUBE API</h3>
         <label>API KEY<div className="input-action"><input type={visible ? 'text' : 'password'} value={apiKey} onChange={event => setApiKey(event.target.value)} placeholder="Stored only in IndexedDB" /><button type="button" onClick={() => setVisible(value => !value)}>{visible ? 'HIDE' : 'SHOW'}</button></div></label>
         <p className="key-status"><span className={`status-dot ${status.tone}`} />{status.text}</p>
+        <QuotaBar />
         <p className="help">The browser sends this key directly to the YouTube Data API.</p>
       </section>
       <section>
