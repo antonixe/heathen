@@ -1,0 +1,18 @@
+name = "velocity-desk-poller"
+main = "src/index.js"
+# kept in the past so wrangler 3 (the last line that runs on Node 20) accepts it; nothing here
+# needs a newer runtime than plain fetch plus D1 bindings
+compatibility_date = "2025-06-01"
+
+# every five minutes; cron triggers go down to one minute if you want tighter sampling
+[triggers]
+crons = ["*/5 * * * *"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "velocity-desk"
+database_id = "63656851-6061-47af-a7d1-8f1ceba86ead"
+
+# Secrets are set with `wrangler secret put`, never committed:
+#   YOUTUBE_API_KEY  the key that currently lives in the browser
+#   SYNC_TOKEN       bearer token the app sends to read and write

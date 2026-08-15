@@ -1,9 +1,8 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, getAllSettings, setSetting } from '../db/db.js'
+import { pacificDate } from '../utils/day.js'
 
-export const pacificDate = (date = new Date()) => new Intl.DateTimeFormat('en-CA', {
-  timeZone: 'America/Los_Angeles', year: 'numeric', month: '2-digit', day: '2-digit',
-}).format(date)
+export { pacificDate }
 
 export async function incrementQuota(units = 1) {
   const today = pacificDate()

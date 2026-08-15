@@ -1,6 +1,8 @@
 node_modules/
 dist/
 .claude/settings.local.json
+.wrangler/
+.dev.vars
 .vercel/
 .env
 .env.local
