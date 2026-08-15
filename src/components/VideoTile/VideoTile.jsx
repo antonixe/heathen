@@ -9,7 +9,7 @@ import Ask from '../shared/Ask.jsx'
 import MiniSparkline from './MiniSparkline.jsx'
 
 
-export default function VideoTile({ video, index, onOpen, onCompare, onEta }) {
+export default function VideoTile({ video, index, onOpen, onCompare, onVitals }) {
   const points = useLiveQuery(() => db.datapoints.where('videoId').equals(video.videoId).sortBy('timestamp'), [video.videoId], [])
   const milestone = useLiveQuery(() => db.milestones.where('videoId').equals(video.videoId).first(), [video.videoId], null)
   const [expanded, setExpanded] = useState(false), [menuOpen, setMenuOpen] = useState(false), [ask, setAsk] = useState(null)
@@ -38,10 +38,15 @@ export default function VideoTile({ video, index, onOpen, onCompare, onEta }) {
     : 0
   const velocityTone = !milestone || !probability ? 'neutral' : (windows.v30m ?? windows.sessionAvg ?? 0) >= probability.requiredVelocity ? 'above' : 'below'
 
-  // hand the dashboard the timestamp it sorts on; a hit or unreachable target reports nothing
+  // the dashboard sorts on eta, the top bar sums velocity and counts risk; a hit or unreachable
+  // target reports no eta so it sinks below the live ones
   useEffect(() => {
-    onEta?.(video.videoId, milestone && !milestone.hitAt ? estimate?.estimatedAt ?? null : null)
-  }, [onEta, video.videoId, milestone, estimate])
+    onVitals?.(video.videoId, {
+      eta: milestone && !milestone.hitAt ? estimate?.estimatedAt ?? null : null,
+      velocity: windows.v30m ?? null,
+      risk: Boolean(probability && !milestone?.hitAt && probability.probability < 0.4),
+    })
+  }, [onVitals, video.videoId, milestone, estimate, windows.v30m, probability])
 
   const pause = async () => db.videos.update(video.id, { pollState: state === 'paused' ? 'idle' : 'paused' })
   const runMenuAction = action => { setMenuOpen(false); action() }
